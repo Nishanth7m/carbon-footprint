@@ -1,0 +1,196 @@
+/* 
+ * styles.css - Custom Performance Layouts
+ * High-performance, layout-shift free styles and dynamic custom properties.
+ */
+
+/* Custom properties for the elegant, eco-friendly professional palette */
+:root {
+  --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  
+  /* Primary HSL colors */
+  --bg-main: hsl(220, 25%, 8%);
+  --bg-card: hsl(220, 22%, 14%);
+  --bg-card-hover: hsl(220, 20%, 18%);
+  
+  --text-primary: hsl(0, 0%, 98%);
+  --text-secondary: hsl(215, 16%, 70%);
+  --text-muted: hsl(215, 12%, 50%);
+  
+  --primary-emerald: hsl(150, 84%, 37%);
+  --primary-emerald-hover: hsl(150, 80%, 42%);
+  --accent-mint: hsl(158, 64%, 52%);
+  --accent-gold: hsl(45, 100%, 55%);
+  --error-rose: hsl(350, 80%, 60%);
+  
+  /* Safe focus outlines */
+  --focus-ring: hsl(45, 100%, 55%);
+  
+  /* Borders and Shadows */
+  --border-light: hsl(220, 20%, 20%);
+  --border-focus: hsl(150, 84%, 37%);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  
+  /* Scale transitions */
+  --transition-speed: 0.25s;
+  --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Strict High-Contrast Mode for WCAG 2.1 AA Compliance */
+body.high-contrast {
+  --bg-main: #000000;
+  --bg-card: #121212;
+  --bg-card-hover: #1e1e1e;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #a0a0a0;
+  --primary-emerald: #00ff66;
+  --primary-emerald-hover: #33ff88;
+  --accent-mint: #00ffcc;
+  --accent-gold: #ffff00;
+  --error-rose: #ff3333;
+  --border-light: #ffffff;
+  --border-focus: #ffff00;
+  --focus-ring: #ffff00;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+}
+
+/* Accessibility: Text Scale adjustments */
+body.text-scale-large {
+  font-size: 1.125rem; /* ~18px base instead of 16px */
+}
+body.text-scale-large h1 { font-size: 2.5rem; }
+body.text-scale-large h2 { font-size: 1.875rem; }
+body.text-scale-large h3 { font-size: 1.5rem; }
+body.text-scale-large p, 
+body.text-scale-large label, 
+body.text-scale-large button, 
+body.text-scale-large input, 
+body.text-scale-large select {
+  font-size: 1.125rem;
+}
+
+/* General Resets and Font Binding */
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  transition: background-color var(--transition-speed) var(--transition-curve), 
+              color var(--transition-speed) var(--transition-curve);
+  min-height: 100vh;
+}
+
+/* Focus Indicator Style (Keyboard focus only) */
+*:focus-visible {
+  outline: 3px solid var(--focus-ring) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.2) !important;
+}
+
+/* Skip Link for Keyboard Accessibility */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--accent-gold);
+  color: #000;
+  font-weight: 700;
+  padding: 12px 24px;
+  z-index: 100;
+  transition: top var(--transition-speed) ease;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* Glassmorphic Cards */
+.glass-panel {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
+  border-radius: 1rem;
+  transition: transform var(--transition-speed) var(--transition-curve), 
+              border-color var(--transition-speed) var(--transition-curve), 
+              box-shadow var(--transition-speed) var(--transition-curve);
+}
+.glass-panel:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-lg);
+}
+
+/* GPU-Accelerated Progress Ring Animation (CLS Safe) */
+.progress-ring__circle {
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  will-change: stroke-dashoffset;
+}
+
+/* Safe Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Custom transitions and interactive animation classes */
+.hover-lift {
+  transition: transform var(--transition-speed) var(--transition-curve);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+.hover-lift:active {
+  transform: translateY(0);
+}
+
+/* Chat Message Animations */
+.message-bubble {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: messageFadeIn 0.3s forwards var(--transition-curve);
+}
+
+@keyframes messageFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility to ensure SR-only items are hidden properly but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Unit Test DOM Matrix Styles */
+.test-suite-panel {
+  border-left: 4px solid var(--border-light);
+}
+.test-pass {
+  color: var(--primary-emerald);
+}
+.test-fail {
+  color: var(--error-rose);
+  font-weight: bold;
+}

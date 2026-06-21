@@ -9,6 +9,7 @@
 /**
  * Baseline state definition blueprint.
  * Frozen deeply at startup to ensure immutability.
+ * @type {object}
  */
 export const DEFAULT_STATE = Object.freeze({
   miles: 12000,
@@ -59,18 +60,21 @@ export class CarbonStorageManager {
   static getClonedDefaultState() {
     try {
       return {
-        miles: DEFAULT_STATE.miles,
-        vehicleType: DEFAULT_STATE.vehicleType,
-        kwh: DEFAULT_STATE.kwh,
-        dietType: DEFAULT_STATE.dietType,
+        miles: parseInt(DEFAULT_STATE.miles, 10),
+        vehicleType: String(DEFAULT_STATE.vehicleType),
+        kwh: parseInt(DEFAULT_STATE.kwh, 10),
+        dietType: String(DEFAULT_STATE.dietType),
         habits: { ...DEFAULT_STATE.habits },
-        chatHistory: DEFAULT_STATE.chatHistory.map(msg => ({ ...msg })),
-        highContrast: DEFAULT_STATE.highContrast,
-        textScale: DEFAULT_STATE.textScale
+        chatHistory: DEFAULT_STATE.chatHistory.map(msg => ({
+          sender: String(msg.sender),
+          text: String(msg.text),
+          time: String(msg.time)
+        })),
+        highContrast: Boolean(DEFAULT_STATE.highContrast),
+        textScale: String(DEFAULT_STATE.textScale)
       };
     } catch (error) {
       console.error("Critical error during default state cloning, recovering with fallback values:", error);
-      // Hard fallback return in case of catastrophic execution failure
       return {
         miles: 12000,
         vehicleType: "gasoline",
@@ -99,8 +103,11 @@ export class CarbonStorageManager {
       const validated = CarbonStorageManager.getClonedDefaultState();
 
       // Validate miles
-      if (typeof state.miles === "number" && Number.isFinite(state.miles)) {
-        validated.miles = state.miles;
+      if (state.miles !== undefined && state.miles !== null) {
+        const parsedMiles = parseInt(state.miles, 10);
+        if (Number.isFinite(parsedMiles) && !Number.isNaN(parsedMiles)) {
+          validated.miles = Math.max(0, parsedMiles);
+        }
       }
       
       // Validate vehicle type
@@ -109,8 +116,11 @@ export class CarbonStorageManager {
       }
       
       // Validate energy kWh
-      if (typeof state.kwh === "number" && Number.isFinite(state.kwh)) {
-        validated.kwh = state.kwh;
+      if (state.kwh !== undefined && state.kwh !== null) {
+        const parsedKwh = parseInt(state.kwh, 10);
+        if (Number.isFinite(parsedKwh) && !Number.isNaN(parsedKwh)) {
+          validated.kwh = Math.max(0, parsedKwh);
+        }
       }
       
       // Validate diet tier
@@ -135,9 +145,9 @@ export class CarbonStorageManager {
                  typeof msg.text === "string";
         }).map(msg => {
           return {
-            sender: msg.sender,
-            text: msg.text,
-            time: typeof msg.time === "string" ? msg.time : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            sender: String(msg.sender),
+            text: String(msg.text),
+            time: typeof msg.time === "string" ? String(msg.time) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           };
         });
       }
@@ -145,7 +155,7 @@ export class CarbonStorageManager {
       // Validate visual configurations
       validated.highContrast = Boolean(state.highContrast);
       if (["normal", "large"].includes(state.textScale)) {
-        validated.textScale = state.textScale;
+        validated.textScale = String(state.textScale);
       }
 
       return validated;

@@ -2,7 +2,7 @@
 
 /**
  * app.js - Main Orchestrator & DOM Engine
- * Unidirectional state flow, strict XSS-immune rendering (zero innerHTML),
+ * Strictly manages application state, safe rendering (zero innerHTML),
  * and typing streaming offline AI Eco-Assistant.
  * Encapsulated within modular OOP Classes with rigorous error boundary checks.
  */
@@ -13,6 +13,7 @@ import { CarbonStorageManager } from './storage.js';
 /**
  * AI Response Library containing pre-programmed environmental advice.
  * Deeply frozen at startup to block runtime manipulation.
+ * @type {object}
  */
 const AI_RESPONSES = Object.freeze([
   Object.freeze({
@@ -41,7 +42,8 @@ const DEFAULT_AI_RESPONSE = "I'm here to help! Try asking about: 'How do I lower
 
 /**
  * Habit carbon reduction coefficients in kg CO2/year.
- * Frozen to prevent modification.
+ * Frozen deeply at startup to prevent modifications.
+ * @type {object}
  */
 const HABIT_OFFSETS = Object.freeze({
   useBags: 100,
@@ -65,23 +67,34 @@ export class AppState {
     try {
       this.data = CarbonStorageManager.getState();
     } catch (error) {
-      console.error("State initialization failed, loading standard default structures:", error);
+      console.error("State initialization failed, loading defaults:", error);
       this.data = CarbonStorageManager.getClonedDefaultState();
     }
   }
 
   /**
    * Updates core calculator numeric variables.
-   * @param {number} miles - Annual miles traveled.
-   * @param {string} vehicleType - Vehicle efficiency selection.
-   * @param {number} kwh - Annual household electricity in kWh.
-   * @param {string} dietType - Diet tier category.
+   * Runs type-casting and boundary checks prior to storage.
+   * @param {any} miles - Annual miles traveled.
+   * @param {any} vehicleType - Vehicle efficiency selection.
+   * @param {any} kwh - Annual household electricity in kWh.
+   * @param {any} dietType - Diet tier category.
    */
   updateCalculatorInputs(miles, vehicleType, kwh, dietType) {
     try {
-      this.data.miles = CarbonCalculator.sanitizeNumber(miles, 0, 100000, 12000);
+      let parsedMiles = parseFloat(miles);
+      let parsedKwh = parseFloat(kwh);
+      
+      if (!Number.isFinite(parsedMiles) || parsedMiles < 0) {
+        parsedMiles = 0.0;
+      }
+      if (!Number.isFinite(parsedKwh) || parsedKwh < 0) {
+        parsedKwh = 0.0;
+      }
+
+      this.data.miles = CarbonCalculator.sanitizeNumber(parsedMiles, 0, 100000, 12000);
       this.data.vehicleType = String(vehicleType);
-      this.data.kwh = CarbonCalculator.sanitizeNumber(kwh, 0, 50000, 4500);
+      this.data.kwh = CarbonCalculator.sanitizeNumber(parsedKwh, 0, 50000, 4500);
       this.data.dietType = String(dietType);
       
       this.persist();
@@ -230,6 +243,7 @@ export class DOMRenderer {
 
   /**
    * Evaluates math metrics from AppState and renders to progress rings/bars/breakdowns.
+   * Updates interactive slider accessibility aria attributes dynamically.
    * @param {AppState} appStateInstance - The unified state model instance.
    */
   static renderDashboard(appStateInstance) {
@@ -243,10 +257,10 @@ export class DOMRenderer {
       const baseTotal = CarbonCalculator.calculateTotal(transportCO2, energyCO2, dietCO2);
 
       // Sum offsets
-      let offsets = 0;
+      let offsets = 0.0;
       Object.keys(state.habits).forEach(key => {
         if (state.habits[key]) {
-          offsets += HABIT_OFFSETS[key] || 0;
+          offsets += parseFloat(HABIT_OFFSETS[key] || "0");
         }
       });
 
@@ -261,7 +275,11 @@ export class DOMRenderer {
       DOMRenderer.safeSetText("#energy-breakdown-text", `${Math.round(energyCO2).toLocaleString()} kg`);
       DOMRenderer.safeSetText("#diet-breakdown-text", `${Math.round(dietCO2).toLocaleString()} kg`);
 
-      // 3. Render layout-shift free category progress bars (Cap benchmark at 10,000 kg)
+      // Sync slider text indicator readouts
+      DOMRenderer.safeSetText("#miles-val-indicator", Math.round(state.miles).toLocaleString());
+      DOMRenderer.safeSetText("#kwh-val-indicator", Math.round(state.kwh).toLocaleString());
+
+      // 3. Render category progress bars (Cap benchmark at 10,000 kg)
       const barCap = 10000;
       const transportPct = Math.min(100, (transportCO2 / barCap) * 100);
       const energyPct = Math.min(100, (energyCO2 / barCap) * 100);
@@ -270,27 +288,40 @@ export class DOMRenderer {
       const transBar = DOMRenderer.getElement("#transport-progress-bar");
       if (transBar) {
         transBar.style.width = `${transportPct}%`;
-        transBar.setAttribute("aria-valuenow", Math.round(transportPct));
+        transBar.setAttribute("aria-valuenow", String(Math.round(transportPct)));
       }
       
       const energyBar = DOMRenderer.getElement("#energy-progress-bar");
       if (energyBar) {
         energyBar.style.width = `${energyPct}%`;
-        energyBar.setAttribute("aria-valuenow", Math.round(energyPct));
+        energyBar.setAttribute("aria-valuenow", String(Math.round(energyPct)));
       }
 
       const dietBar = DOMRenderer.getElement("#diet-progress-bar");
       if (dietBar) {
         dietBar.style.width = `${dietPct}%`;
-        dietBar.setAttribute("aria-valuenow", Math.round(dietPct));
+        dietBar.setAttribute("aria-valuenow", String(Math.round(dietPct)));
+      }
+
+      // Sync slider interactive state accessibility tags
+      const milesSlider = DOMRenderer.getElement("#input-miles");
+      if (milesSlider) {
+        milesSlider.value = state.miles;
+        milesSlider.setAttribute("aria-valuenow", String(state.miles));
+      }
+      
+      const kwhSlider = DOMRenderer.getElement("#input-kwh");
+      if (kwhSlider) {
+        kwhSlider.value = state.kwh;
+        kwhSlider.setAttribute("aria-valuenow", String(state.kwh));
       }
 
       // 4. Circular SVG meter animation (Circumference = 326.72)
       const scoreRing = DOMRenderer.getElement("#score-ring");
       if (scoreRing) {
         const circumference = 326.72;
-        const offset = circumference - (ecoScore / 100) * circumference;
-        scoreRing.style.strokeDashoffset = offset;
+        const offset = circumference - (ecoScore / 100.0) * circumference;
+        scoreRing.style.strokeDashoffset = String(offset);
       }
     } catch (error) {
       console.error("Dashboard render pipeline encountered an exception:", error);
@@ -342,6 +373,7 @@ export class DOMRenderer {
 
   /**
    * Renders the chat dialogue transcript list safely using XSS-immune element builders.
+   * Appends streamed characters strictly through textNodes.
    * @param {AppState} appStateInstance - The unified state model instance.
    */
   static renderChatLogs(appStateInstance) {
@@ -362,15 +394,16 @@ export class DOMRenderer {
         const senderSpan = document.createElement("span");
         senderSpan.className = "text-[10px] uppercase font-bold tracking-wider mb-1 " + 
           (msg.sender === "user" ? "text-[var(--accent-mint)]" : "text-[var(--accent-gold)]");
-        senderSpan.textContent = msg.sender === "user" ? "You" : "Eco-Assistant";
+        senderSpan.appendChild(document.createTextNode(msg.sender === "user" ? "You" : "Eco-Assistant"));
 
         const textSpan = document.createElement("span");
         textSpan.className = "leading-relaxed break-words text-white";
-        textSpan.textContent = msg.text;
+        // Ironclad XSS defense: append text exclusively using textNode
+        textSpan.appendChild(document.createTextNode(msg.text));
 
         const timeSpan = document.createElement("span");
         timeSpan.className = "text-[9px] text-[var(--text-muted)] mt-1.5 self-end";
-        timeSpan.textContent = msg.time;
+        timeSpan.appendChild(document.createTextNode(msg.time));
 
         bubble.appendChild(senderSpan);
         bubble.appendChild(textSpan);
@@ -393,6 +426,7 @@ export class AIEcoAssistant {
 
   /**
    * Searches keyword databases and streams structured responses.
+   * Streams text safely through TextNode appends.
    * @param {string} userQuery - The message text entered by the user.
    * @param {AppState} appStateInstance - The unified state model instance.
    * @param {Function} onStreamCallback - Callback executed at each streamed character step.
@@ -410,7 +444,7 @@ export class AIEcoAssistant {
         }
       }
 
-      // Add a blank placeholder assistant message to the state history
+      // Add a blank placeholder assistant message to history
       const timeStamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       appStateInstance.addChatMessage("assistant", "", timeStamp);
 
@@ -432,216 +466,257 @@ export class AIEcoAssistant {
           clearInterval(timer);
           console.error("Typewriter character streaming interrupted:", intervalError);
         }
-      }, 10);
+      }, 8);
     } catch (error) {
       console.error("AI response processing failed:", error);
     }
   }
 }
 
-// Global App Orchestrator Reference
-let stateManager = null;
-
 /**
- * Binds DOM event listeners safely with complete try-catch boundaries.
+ * CarbonCalculatorApp Class
+ * Wraps the entire application orchestrator and event lifecycle inside an ES6 module class.
  */
-function bindEventListeners() {
-  try {
-    const calcForm = DOMRenderer.getElement("#calculator-form");
-    const btnReset = DOMRenderer.getElement("#btn-reset-form");
-    const contrastBtn = DOMRenderer.getElement("#toggle-contrast");
-    const scaleBtn = DOMRenderer.getElement("#toggle-text-scale");
-    const chatForm = DOMRenderer.getElement("#chat-form");
-    const chatInput = DOMRenderer.getElement("#chat-input");
-
-    // Form Submission
-    if (calcForm) {
-      calcForm.addEventListener("submit", (e) => {
-        try {
-          e.preventDefault();
-          const milesVal = Number(DOMRenderer.getElement("#input-miles")?.value || 0);
-          const vehicleVal = DOMRenderer.getElement("#select-vehicle")?.value || "gasoline";
-          const kwhVal = Number(DOMRenderer.getElement("#input-kwh")?.value || 0);
-          const dietVal = DOMRenderer.getElement("#select-diet")?.value || "mediumMeat";
-
-          stateManager.updateCalculatorInputs(milesVal, vehicleVal, kwhVal, dietVal);
-          DOMRenderer.renderDashboard(stateManager);
-          DOMRenderer.announce("Recalculation finished successfully.");
-        } catch (submitError) {
-          console.error("Form submit binding error:", submitError);
-        }
-      });
+export class CarbonCalculatorApp {
+  
+  /**
+   * Constructor initializes state and renders initial visual templates.
+   */
+  constructor() {
+    try {
+      this.state = new AppState();
+    } catch (error) {
+      console.error("Failed to construct AppState inside main orchestrator:", error);
     }
+  }
 
-    // Reset Button
-    if (btnReset) {
-      btnReset.addEventListener("click", () => {
-        try {
-          stateManager.resetState();
-          
-          const milesIn = DOMRenderer.getElement("#input-miles");
-          if (milesIn) milesIn.value = stateManager.data.miles;
-          
-          const vehicleIn = DOMRenderer.getElement("#select-vehicle");
-          if (vehicleIn) vehicleIn.value = stateManager.data.vehicleType;
-          
-          const kwhIn = DOMRenderer.getElement("#input-kwh");
-          if (kwhIn) kwhIn.value = stateManager.data.kwh;
-          
-          const dietIn = DOMRenderer.getElement("#select-diet");
-          if (dietIn) dietIn.value = stateManager.data.dietType;
+  /**
+   * Bootstraps initial renders and registers system events.
+   */
+  init() {
+    try {
+      // Sync UI sliders and visual templates
+      DOMRenderer.renderVisualPreferences(this.state);
+      DOMRenderer.renderChatLogs(this.state);
+      DOMRenderer.renderDashboard(this.state);
 
-          Object.keys(stateManager.data.habits).forEach(key => {
-            const cb = DOMRenderer.getElement(`#habit-${key}`);
-            if (cb) cb.checked = stateManager.data.habits[key];
-          });
-
-          DOMRenderer.renderDashboard(stateManager);
-          DOMRenderer.announce("Baseline defaults reloaded.");
-        } catch (resetError) {
-          console.error("Reset button binding error:", resetError);
-        }
-      });
+      this.bindEvents();
+    } catch (error) {
+      console.error("CarbonCalculatorApp bootstrapping failed:", error);
     }
+  }
 
-    // Habit checkboxes
-    Object.keys(stateManager.data.habits).forEach(key => {
-      const cb = DOMRenderer.getElement(`#habit-${key}`);
-      if (cb) {
-        cb.addEventListener("change", (e) => {
+  /**
+   * Registers DOM event listeners with extensive type safety boundaries.
+   */
+  bindEvents() {
+    try {
+      const calcForm = DOMRenderer.getElement("#calculator-form");
+      const btnReset = DOMRenderer.getElement("#btn-reset-form");
+      const contrastBtn = DOMRenderer.getElement("#toggle-contrast");
+      const scaleBtn = DOMRenderer.getElement("#toggle-text-scale");
+      const chatForm = DOMRenderer.getElement("#chat-form");
+      const chatInput = DOMRenderer.getElement("#chat-input");
+      
+      const milesSlider = DOMRenderer.getElement("#input-miles");
+      const kwhSlider = DOMRenderer.getElement("#input-kwh");
+
+      // Dynamic slider value change listeners (update state and indicators on drag)
+      if (milesSlider) {
+        milesSlider.addEventListener("input", (e) => {
           try {
-            stateManager.updateHabit(key, e.target.checked);
-            DOMRenderer.renderDashboard(stateManager);
-            DOMRenderer.announce(`Habit preference adjusted: ${key} is now ${e.target.checked ? 'active' : 'inactive'}.`);
-          } catch (habitError) {
-            console.error("Habit checkbox change binding error:", habitError);
+            const milesVal = parseFloat(e.target.value);
+            DOMRenderer.safeSetText("#miles-val-indicator", Math.round(milesVal).toLocaleString());
+            milesSlider.setAttribute("aria-valuenow", String(milesVal));
+          } catch (sliderErr) {
+            console.error("Miles slider drag event failed:", sliderErr);
           }
         });
       }
-    });
 
-    // Visual preferences
-    if (contrastBtn) {
-      contrastBtn.addEventListener("click", () => {
-        try {
-          const contrast = stateManager.toggleContrast();
-          DOMRenderer.renderVisualPreferences(stateManager);
-          DOMRenderer.announce(`High contrast settings toggled: ${contrast ? 'ON' : 'OFF'}.`);
-        } catch (contrastError) {
-          console.error("Contrast button binding error:", contrastError);
-        }
-      });
-    }
+      if (kwhSlider) {
+        kwhSlider.addEventListener("input", (e) => {
+          try {
+            const kwhVal = parseFloat(e.target.value);
+            DOMRenderer.safeSetText("#kwh-val-indicator", Math.round(kwhVal).toLocaleString());
+            kwhSlider.setAttribute("aria-valuenow", String(kwhVal));
+          } catch (sliderErr) {
+            console.error("kWh slider drag event failed:", sliderErr);
+          }
+        });
+      }
 
-    if (scaleBtn) {
-      scaleBtn.addEventListener("click", () => {
-        try {
-          const scale = stateManager.toggleTextScale();
-          DOMRenderer.renderVisualPreferences(stateManager);
-          DOMRenderer.announce(`Text scale settings modified: ${scale} size active.`);
-        } catch (scaleError) {
-          console.error("Text scale button binding error:", scaleError);
-        }
-      });
-    }
+      // Form Submit (Recalculate)
+      if (calcForm) {
+        calcForm.addEventListener("submit", (e) => {
+          try {
+            e.preventDefault();
+            // Pre-calculation input sanitization: force parseFloat, finiteness and range checks immediately
+            let milesVal = parseFloat(DOMRenderer.getElement("#input-miles")?.value || "0");
+            let kwhVal = parseFloat(DOMRenderer.getElement("#input-kwh")?.value || "0");
+            const vehicleVal = String(DOMRenderer.getElement("#select-vehicle")?.value || "gasoline");
+            const dietVal = String(DOMRenderer.getElement("#select-diet")?.value || "mediumMeat");
 
-    // Chat Submission
-    if (chatForm && chatInput) {
-      chatForm.addEventListener("submit", (e) => {
-        try {
-          e.preventDefault();
-          const query = chatInput.value.trim();
-          if (!query) return;
+            if (!Number.isFinite(milesVal) || milesVal < 0) {
+              milesVal = 0.0;
+            }
+            if (!Number.isFinite(kwhVal) || kwhVal < 0) {
+              kwhVal = 0.0;
+            }
 
-          const timeStamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          stateManager.addChatMessage("user", query, timeStamp);
-          DOMRenderer.renderChatLogs(stateManager);
-          chatInput.value = "";
+            this.state.updateCalculatorInputs(milesVal, vehicleVal, kwhVal, dietVal);
+            DOMRenderer.renderDashboard(this.state);
+            DOMRenderer.announce("Recalculation finished successfully.");
+          } catch (submitError) {
+            console.error("Form submit binding error:", submitError);
+          }
+        });
+      }
 
-          AIEcoAssistant.generateResponse(query, stateManager, () => {
-            DOMRenderer.renderChatLogs(stateManager);
+      // Reset Button
+      if (btnReset) {
+        btnReset.addEventListener("click", () => {
+          try {
+            this.state.resetState();
+            
+            const milesVal = this.state.data.miles;
+            const kwhVal = this.state.data.kwh;
+
+            if (milesSlider) {
+              milesSlider.value = milesVal;
+              milesSlider.setAttribute("aria-valuenow", String(milesVal));
+            }
+            if (kwhSlider) {
+              kwhSlider.value = kwhVal;
+              kwhSlider.setAttribute("aria-valuenow", String(kwhVal));
+            }
+
+            DOMRenderer.safeSetText("#miles-val-indicator", Math.round(milesVal).toLocaleString());
+            DOMRenderer.safeSetText("#kwh-val-indicator", Math.round(kwhVal).toLocaleString());
+
+            const vehicleSelect = DOMRenderer.getElement("#select-vehicle");
+            if (vehicleSelect) vehicleSelect.value = this.state.data.vehicleType;
+            
+            const dietSelect = DOMRenderer.getElement("#select-diet");
+            if (dietSelect) dietSelect.value = this.state.data.dietType;
+
+            Object.keys(this.state.data.habits).forEach(key => {
+              const cb = DOMRenderer.getElement(`#habit-${key}`);
+              if (cb) cb.checked = this.state.data.habits[key];
+            });
+
+            DOMRenderer.renderDashboard(this.state);
+            DOMRenderer.announce("Baseline defaults reloaded.");
+          } catch (resetError) {
+            console.error("Reset button binding error:", resetError);
+          }
+        });
+      }
+
+      // Habit checkboxes
+      Object.keys(this.state.data.habits).forEach(key => {
+        const cb = DOMRenderer.getElement(`#habit-${key}`);
+        if (cb) {
+          cb.addEventListener("change", (e) => {
+            try {
+              this.state.updateHabit(key, e.target.checked);
+              DOMRenderer.renderDashboard(this.state);
+              DOMRenderer.announce(`Habit preference adjusted: ${key} is now ${e.target.checked ? 'active' : 'inactive'}.`);
+            } catch (habitError) {
+              console.error("Habit checkbox change binding error:", habitError);
+            }
           });
-        } catch (chatError) {
-          console.error("Chat submit binding error:", chatError);
         }
       });
-    }
 
-    // Suggestion chips
-    document.querySelectorAll(".chat-suggest").forEach(chip => {
-      chip.addEventListener("click", (e) => {
-        try {
-          if (chatInput) {
-            chatInput.value = e.target.textContent.trim();
-            chatForm.dispatchEvent(new Event("submit"));
+      // Visual Contrast Settings
+      if (contrastBtn) {
+        contrastBtn.addEventListener("click", () => {
+          try {
+            const contrast = this.state.toggleContrast();
+            DOMRenderer.renderVisualPreferences(this.state);
+            DOMRenderer.announce(`High contrast settings toggled: ${contrast ? 'ON' : 'OFF'}.`);
+          } catch (contrastError) {
+            console.error("Contrast button binding error:", contrastError);
           }
-        } catch (chipError) {
-          console.error("Suggestion chip click binding error:", chipError);
-        }
-      });
-    });
+        });
+      }
 
-    // Diagnostic trigger
-    const testTrigger = DOMRenderer.getElement("#btn-run-tests");
-    if (testTrigger) {
-      testTrigger.addEventListener("click", () => {
-        try {
-          if (window.runUnitTests) {
-            window.runUnitTests();
-            DOMRenderer.announce("Unit tests diagnostics executed successfully.");
+      // Text Scale settings
+      if (scaleBtn) {
+        scaleBtn.addEventListener("click", () => {
+          try {
+            const scale = this.state.toggleTextScale();
+            DOMRenderer.renderVisualPreferences(this.state);
+            DOMRenderer.announce(`Text scale settings modified: ${scale} size active.`);
+          } catch (scaleError) {
+            console.error("Text scale button binding error:", scaleError);
           }
-        } catch (testError) {
-          console.error("Diagnostic button click binding error:", testError);
-        }
+        });
+      }
+
+      // Chat submission
+      if (chatForm && chatInput) {
+        chatForm.addEventListener("submit", (e) => {
+          try {
+            e.preventDefault();
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            const timeStamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            this.state.addChatMessage("user", query, timeStamp);
+            DOMRenderer.renderChatLogs(this.state);
+            chatInput.value = "";
+
+            AIEcoAssistant.generateResponse(query, this.state, () => {
+              DOMRenderer.renderChatLogs(this.state);
+            });
+          } catch (chatError) {
+            console.error("Chat submit binding error:", chatError);
+          }
+        });
+      }
+
+      // Suggestion chips
+      document.querySelectorAll(".chat-suggest").forEach(chip => {
+        chip.addEventListener("click", (e) => {
+          try {
+            if (chatInput) {
+              chatInput.value = e.target.textContent.trim();
+              chatForm.dispatchEvent(new Event("submit"));
+            }
+          } catch (chipError) {
+            console.error("Suggestion chip click binding error:", chipError);
+          }
+        });
       });
+
+      // Diagnostic Trigger
+      const testTrigger = DOMRenderer.getElement("#btn-run-tests");
+      if (testTrigger) {
+        testTrigger.addEventListener("click", () => {
+          try {
+            if (window.runUnitTests) {
+              window.runUnitTests();
+              DOMRenderer.announce("Unit tests diagnostics executed successfully.");
+            }
+          } catch (testError) {
+            console.error("Diagnostic button click binding error:", testError);
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Global event binding failed:", error);
     }
-  } catch (error) {
-    console.error("Global event binding sequence failed:", error);
   }
 }
 
-/**
- * Initializes state bindings, renders visuals, and registers handlers.
- */
-function initializeApp() {
-  try {
-    stateManager = new AppState();
-
-    // Set initial input states
-    const milesIn = DOMRenderer.getElement("#input-miles");
-    if (milesIn) milesIn.value = stateManager.data.miles;
-    
-    const vehicleIn = DOMRenderer.getElement("#select-vehicle");
-    if (vehicleIn) vehicleIn.value = stateManager.data.vehicleType;
-    
-    const kwhIn = DOMRenderer.getElement("#input-kwh");
-    if (kwhIn) kwhIn.value = stateManager.data.kwh;
-    
-    const dietIn = DOMRenderer.getElement("#select-diet");
-    if (dietIn) dietIn.value = stateManager.data.dietType;
-
-    Object.keys(stateManager.data.habits).forEach(key => {
-      const cb = DOMRenderer.getElement(`#habit-${key}`);
-      if (cb) cb.checked = stateManager.data.habits[key];
-    });
-
-    // Core renderings
-    DOMRenderer.renderVisualPreferences(stateManager);
-    DOMRenderer.renderChatLogs(stateManager);
-    DOMRenderer.renderDashboard(stateManager);
-
-    // Event hooks
-    bindEventListeners();
-  } catch (error) {
-    console.error("Application bootstrapping sequence crashed:", error);
-  }
-}
-
-// Attach load handler safely
+// Bootstrap application safely
 window.addEventListener("DOMContentLoaded", () => {
   try {
-    initializeApp();
-  } catch (loadError) {
-    console.error("System DOMContentLoaded handler crashed:", loadError);
+    const app = new CarbonCalculatorApp();
+    app.init();
+  } catch (bootstrapError) {
+    console.error("CarbonCalculatorApp failed to bootstrap on DOM load:", bootstrapError);
   }
 });

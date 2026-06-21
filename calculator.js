@@ -3,18 +3,20 @@
 /**
  * calculator.js - Mathematical Domain Logic & Utility
  * Exposes a structured class containing pure, sanitized carbon estimation calculations.
+ * Protects variables from overflow and invalid numeric formats using deep validation.
  */
 
 /**
  * Coefficient emission factors in kg CO2 per unit.
- * Frozen to guarantee immutability at runtime.
+ * Frozen deeply at startup to guarantee immutability.
+ * @type {object}
  */
 export const EMISSION_FACTORS = Object.freeze({
   transport: Object.freeze({
     gasoline: 0.404,     // kg CO2 per mile (US EPA standard gas vehicle)
     hybrid: 0.200,       // kg CO2 per mile (Efficient hybrid)
     electric: 0.150,     // kg CO2 per mile (Average grid charging footprint)
-    transit: 0.089,      // kg CO2 per passenger mile (Public bus/train average)
+    transit: 0.089,      // kg CO2 per passenger mile (Public transit average)
     none: 0.0            // Walking/biking
   }),
   energy: Object.freeze({
@@ -31,11 +33,12 @@ export const EMISSION_FACTORS = Object.freeze({
 
 /**
  * Maximum and minimum validation boundaries to protect against overflow or NaN.
- * Frozen to guarantee immutability at runtime.
+ * Frozen deeply at startup to guarantee immutability.
+ * @type {object}
  */
 export const BOUNDARIES = Object.freeze({
-  miles: Object.freeze({ min: 0, max: 100000, default: 0 }),
-  kwh: Object.freeze({ min: 0, max: 50000, default: 0 })
+  miles: Object.freeze({ min: 0, max: 100000, default: 12000 }),
+  kwh: Object.freeze({ min: 0, max: 50000, default: 4500 })
 });
 
 /**
@@ -55,8 +58,8 @@ export class CarbonCalculator {
    */
   static sanitizeNumber(value, min, max, defaultValue) {
     try {
-      const parsed = Number(value);
-      if (!Number.isFinite(parsed)) {
+      const parsed = parseFloat(value);
+      if (typeof parsed !== "number" || !Number.isFinite(parsed) || Number.isNaN(parsed)) {
         return defaultValue;
       }
       return Math.max(min, Math.min(parsed, max));
@@ -88,7 +91,7 @@ export class CarbonCalculator {
       return sanitizedMiles * factor;
     } catch (error) {
       console.error("Transport footprint calculation failed, returning 0:", error);
-      return 0;
+      return 0.0;
     }
   }
 
@@ -109,7 +112,7 @@ export class CarbonCalculator {
       return sanitizedKwh * EMISSION_FACTORS.energy.electricity;
     } catch (error) {
       console.error("Energy footprint calculation failed, returning 0:", error);
-      return 0;
+      return 0.0;
     }
   }
 
@@ -124,10 +127,10 @@ export class CarbonCalculator {
         ? EMISSION_FACTORS.diet[dietType] 
         : EMISSION_FACTORS.diet.mediumMeat;
       
-      return factor;
+      return parseFloat(factor);
     } catch (error) {
       console.error("Dietary footprint lookup failed, returning default mediumMeat factor:", error);
-      return EMISSION_FACTORS.diet.mediumMeat;
+      return parseFloat(EMISSION_FACTORS.diet.mediumMeat);
     }
   }
 
@@ -146,7 +149,7 @@ export class CarbonCalculator {
       return t + e + d;
     } catch (error) {
       console.error("Total footprint summing failed, returning 0:", error);
-      return 0;
+      return 0.0;
     }
   }
 
@@ -159,7 +162,7 @@ export class CarbonCalculator {
     try {
       const sanitizedCarbon = CarbonCalculator.sanitizeNumber(totalCarbon, 0, 1000000, 0);
       const maxBenchmark = 16000; // Benchmark for high emissions (kg CO2/year)
-      const score = (1 - (sanitizedCarbon / maxBenchmark)) * 100;
+      const score = (1.0 - (sanitizedCarbon / maxBenchmark)) * 100.0;
       return Math.max(0, Math.min(100, Math.round(score)));
     } catch (error) {
       console.error("Eco Score calculation failed, returning default 50:", error);

@@ -34,7 +34,7 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <!-- WCAG: Live Announcement Region for Screen Readers -->
-  <div id="announcement-zone" class="sr-only" aria-live="polite"></div>
+  <div id="announcement-zone" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Main Navigation Header -->
   <header class="w-full bg-[#121620] border-b border-[var(--border-light)] z-40 sticky top-0" role="banner">
@@ -49,10 +49,10 @@
       <!-- Accessibility Settings Toolbar -->
       <nav class="flex items-center space-x-4" aria-label="Accessibility Tools">
         <div class="flex bg-slate-900 border border-[var(--border-light)] rounded-lg p-1 space-x-1" role="toolbar" aria-label="Visual settings">
-          <button id="toggle-contrast" class="px-3 py-1.5 text-xs font-semibold rounded-md text-[var(--text-secondary)] hover:text-white transition-all focus:outline-none" aria-label="Toggle High Contrast Mode">
+          <button id="toggle-contrast" class="px-3 py-1.5 text-xs font-semibold rounded-md text-[var(--text-secondary)] hover:text-white transition-all focus:outline-none cursor-pointer" aria-label="Toggle High Contrast Mode">
             High Contrast
           </button>
-          <button id="toggle-text-scale" class="px-3 py-1.5 text-xs font-semibold rounded-md text-[var(--text-secondary)] hover:text-white transition-all focus:outline-none" aria-label="Toggle Large Text Size">
+          <button id="toggle-text-scale" class="px-3 py-1.5 text-xs font-semibold rounded-md text-[var(--text-secondary)] hover:text-white transition-all focus:outline-none cursor-pointer" aria-label="Toggle Large Text Size">
             Large Text
           </button>
         </div>
@@ -90,15 +90,16 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
             <!-- Dynamic SVG Circular Meter -->
             <div class="flex flex-col items-center justify-center p-4">
-              <div class="relative w-36 h-36">
+              <div class="relative w-36 h-36" aria-label="Eco Score progress meter visualization">
                 <!-- Outer Track -->
-                <svg class="w-full h-full" viewBox="0 0 120 120">
+                <svg class="w-full h-full" viewBox="0 0 120 120" aria-hidden="true">
                   <circle cx="60" cy="60" r="52" fill="transparent" stroke="hsl(220, 20%, 20%)" stroke-width="8"></circle>
                   <circle id="score-ring" class="progress-ring__circle" cx="60" cy="60" r="52" fill="transparent" stroke="var(--primary-emerald)" stroke-width="8" stroke-dasharray="326.72" stroke-dashoffset="326.72" stroke-linecap="round"></circle>
                 </svg>
                 <!-- Inner Score Content -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span id="score-percentage-display" class="text-3xl font-extrabold text-white" aria-live="polite">--</span>
+                  <!-- WCAG AA: Live region atomic announcements for changing scores -->
+                  <span id="score-percentage-display" class="text-3xl font-extrabold text-white animate-pulse" aria-live="polite" aria-atomic="true">--</span>
                   <span class="text-[10px] text-[var(--text-muted)] tracking-wider uppercase font-semibold">Eco Score</span>
                 </div>
               </div>
@@ -111,40 +112,41 @@
             <div class="space-y-4">
               <div class="bg-slate-900/60 p-4 rounded-xl border border-[var(--border-light)]">
                 <span class="text-xs text-[var(--text-muted)] font-semibold uppercase block">Total Emissions</span>
-                <span id="total-emissions-display" class="text-3xl font-extrabold text-[var(--primary-emerald)] inline-block mt-1">-- kg</span>
+                <!-- WCAG AA: Live region atomic announcements for total emissions -->
+                <span id="total-emissions-display" class="text-3xl font-extrabold text-[var(--primary-emerald)] inline-block mt-1" aria-live="polite" aria-atomic="true">-- kg</span>
                 <span class="text-xs text-[var(--text-secondary)] block mt-1">CO₂ equivalent per year</span>
               </div>
               
               <!-- Performance Categories -->
-              <div class="space-y-2.5">
+              <div class="space-y-2.5" role="region" aria-label="Emissions Breakdown Categories">
                 <!-- Transport Bar -->
                 <div>
                   <div class="flex justify-between text-xs mb-1">
                     <span class="text-[var(--text-secondary)]">Transport emissions</span>
-                    <span id="transport-breakdown-text" class="text-white font-semibold">0 kg</span>
+                    <span id="transport-breakdown-text" class="text-white font-semibold text-right" aria-live="polite" aria-atomic="true">0 kg</span>
                   </div>
                   <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div id="transport-progress-bar" class="bg-[var(--accent-mint)] h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    <div id="transport-progress-bar" class="bg-[var(--accent-mint)] h-2 rounded-full transition-all duration-500" style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Transport emissions loading percentage"></div>
                   </div>
                 </div>
                 <!-- Energy Bar -->
                 <div>
                   <div class="flex justify-between text-xs mb-1">
                     <span class="text-[var(--text-secondary)]">Energy emissions</span>
-                    <span id="energy-breakdown-text" class="text-white font-semibold">0 kg</span>
+                    <span id="energy-breakdown-text" class="text-white font-semibold text-right" aria-live="polite" aria-atomic="true">0 kg</span>
                   </div>
                   <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div id="energy-progress-bar" class="bg-[var(--accent-gold)] h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    <div id="energy-progress-bar" class="bg-[var(--accent-gold)] h-2 rounded-full transition-all duration-500" style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Energy emissions loading percentage"></div>
                   </div>
                 </div>
                 <!-- Diet Bar -->
                 <div>
                   <div class="flex justify-between text-xs mb-1">
                     <span class="text-[var(--text-secondary)]">Diet emissions</span>
-                    <span id="diet-breakdown-text" class="text-white font-semibold">0 kg</span>
+                    <span id="diet-breakdown-text" class="text-white font-semibold text-right" aria-live="polite" aria-atomic="true">0 kg</span>
                   </div>
                   <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div id="diet-progress-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    <div id="diet-progress-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Diet emissions loading percentage"></div>
                   </div>
                 </div>
               </div>
@@ -165,46 +167,46 @@
           <div class="space-y-3.5" role="group" aria-label="Carbon Reduction Actions">
             <!-- Habit Card 1 -->
             <label class="flex items-start bg-slate-900/40 border border-[var(--border-light)] hover:border-[var(--border-focus)] rounded-xl p-4 cursor-pointer transition-all hover-lift">
-              <input type="checkbox" id="habit-useBags" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5">
+              <input type="checkbox" id="habit-useBags" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5" aria-describedby="desc-habit-bags">
               <span class="ml-3.5 block">
                 <span class="text-sm font-semibold text-white block">Avoid Single-Use Plastics</span>
-                <span class="text-xs text-[var(--text-muted)] block mt-0.5">Reduces plastic manufacturing demand. Estimated offset: <strong class="text-[var(--accent-mint)]">100 kg CO₂ / year</strong></span>
+                <span id="desc-habit-bags" class="text-xs text-[var(--text-muted)] block mt-0.5">Reduces plastic manufacturing demand. Estimated offset: <strong class="text-[var(--accent-mint)]">100 kg CO₂ / year</strong></span>
               </span>
             </label>
 
             <!-- Habit Card 2 -->
             <label class="flex items-start bg-slate-900/40 border border-[var(--border-light)] hover:border-[var(--border-focus)] rounded-xl p-4 cursor-pointer transition-all hover-lift">
-              <input type="checkbox" id="habit-carpool" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5">
+              <input type="checkbox" id="habit-carpool" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5" aria-describedby="desc-habit-carpool">
               <span class="ml-3.5 block">
                 <span class="text-sm font-semibold text-white block">Carpool or Bike to Work</span>
-                <span class="text-xs text-[var(--text-muted)] block mt-0.5">Reduces vehicular emissions. Estimated offset: <strong class="text-[var(--accent-mint)]">800 kg CO₂ / year</strong></span>
+                <span id="desc-habit-carpool" class="text-xs text-[var(--text-muted)] block mt-0.5">Reduces vehicular emissions. Estimated offset: <strong class="text-[var(--accent-mint)]">800 kg CO₂ / year</strong></span>
               </span>
             </label>
 
             <!-- Habit Card 3 -->
             <label class="flex items-start bg-slate-900/40 border border-[var(--border-light)] hover:border-[var(--border-focus)] rounded-xl p-4 cursor-pointer transition-all hover-lift">
-              <input type="checkbox" id="habit-energySave" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5">
+              <input type="checkbox" id="habit-energySave" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5" aria-describedby="desc-habit-energysave">
               <span class="ml-3.5 block">
                 <span class="text-sm font-semibold text-white block">Unplug Standby Electronics</span>
-                <span class="text-xs text-[var(--text-muted)] block mt-0.5">Prevents vampire power drain. Estimated offset: <strong class="text-[var(--accent-mint)]">150 kg CO₂ / year</strong></span>
+                <span id="desc-habit-energysave" class="text-xs text-[var(--text-muted)] block mt-0.5">Prevents vampire power drain. Estimated offset: <strong class="text-[var(--accent-mint)]">150 kg CO₂ / year</strong></span>
               </span>
             </label>
 
             <!-- Habit Card 4 -->
             <label class="flex items-start bg-slate-900/40 border border-[var(--border-light)] hover:border-[var(--border-focus)] rounded-xl p-4 cursor-pointer transition-all hover-lift">
-              <input type="checkbox" id="habit-lowerThermostat" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5">
+              <input type="checkbox" id="habit-lowerThermostat" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5" aria-describedby="desc-habit-climate">
               <span class="ml-3.5 block">
                 <span class="text-sm font-semibold text-white block">Lower Heating/Cooling by 2°F</span>
-                <span class="text-xs text-[var(--text-muted)] block mt-0.5">Saves household climate power. Estimated offset: <strong class="text-[var(--accent-mint)]">350 kg CO₂ / year</strong></span>
+                <span id="desc-habit-climate" class="text-xs text-[var(--text-muted)] block mt-0.5">Saves household climate power. Estimated offset: <strong class="text-[var(--accent-mint)]">350 kg CO₂ / year</strong></span>
               </span>
             </label>
 
             <!-- Habit Card 5 -->
             <label class="flex items-start bg-slate-900/40 border border-[var(--border-light)] hover:border-[var(--border-focus)] rounded-xl p-4 cursor-pointer transition-all hover-lift">
-              <input type="checkbox" id="habit-reduceWaste" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5">
+              <input type="checkbox" id="habit-reduceWaste" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-[var(--primary-emerald)] focus:ring-amber-500 mt-0.5" aria-describedby="desc-habit-waste">
               <span class="ml-3.5 block">
                 <span class="text-sm font-semibold text-white block">Zero Food Waste Challenge</span>
-                <span class="text-xs text-[var(--text-muted)] block mt-0.5">Less landfill methane generation. Estimated offset: <strong class="text-[var(--accent-mint)]">200 kg CO₂ / year</strong></span>
+                <span id="desc-habit-waste" class="text-xs text-[var(--text-muted)] block mt-0.5">Less landfill methane generation. Estimated offset: <strong class="text-[var(--accent-mint)]">200 kg CO₂ / year</strong></span>
               </span>
             </label>
           </div>
@@ -228,23 +230,30 @@
               <span class="text-xs font-bold uppercase tracking-wider text-[var(--accent-mint)] block">Transportation Details</span>
               
               <div>
-                <label for="input-miles" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                <label id="label-miles" for="input-miles" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                   Annual Travel Distance (Miles)
                 </label>
-                <input type="number" id="input-miles" name="miles" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all" min="0" max="100000" required>
+                <!-- WCAG AA: Explicit aria-describedby for detailed field description -->
+                <input type="number" id="input-miles" name="miles" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all" min="0" max="100000" aria-describedby="help-miles" required>
+                <p id="help-miles" class="text-[10px] text-[var(--text-muted)] mt-1.5">
+                  Enter your total estimated driving/riding mileage per year.
+                </p>
               </div>
 
               <div>
-                <label for="select-vehicle" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                <label id="label-vehicle" for="select-vehicle" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                   Primary Commuting Vehicle Type
                 </label>
-                <select id="select-vehicle" name="vehicleType" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all">
+                <select id="select-vehicle" name="vehicleType" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all" aria-describedby="help-vehicle">
                   <option value="gasoline">Standard Gasoline Car</option>
                   <option value="hybrid">Efficient Hybrid Car</option>
                   <option value="electric">Electric Vehicle (EV)</option>
                   <option value="transit">Public Transit (Bus/Train)</option>
                   <option value="none">None (Walk/Bike)</option>
                 </select>
+                <p id="help-vehicle" class="text-[10px] text-[var(--text-muted)] mt-1.5">
+                  Select the transport mode you utilize most frequently.
+                </p>
               </div>
             </div>
 
@@ -255,10 +264,14 @@
               <span class="text-xs font-bold uppercase tracking-wider text-[var(--accent-gold)] block">Household Power Details</span>
               
               <div>
-                <label for="input-kwh" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                <label id="label-kwh" for="input-kwh" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                   Annual Electricity Consumed (kWh)
                 </label>
-                <input type="number" id="input-kwh" name="kwh" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all" min="0" max="50000" required>
+                <!-- WCAG AA: Explicit aria-describedby for detailed field description -->
+                <input type="number" id="input-kwh" name="kwh" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all" min="0" max="50000" aria-describedby="help-kwh" required>
+                <p id="help-kwh" class="text-[10px] text-[var(--text-muted)] mt-1.5">
+                  Enter annual electricity usage in kilowatt-hours (kWh) from utility bills.
+                </p>
               </div>
             </div>
 
@@ -269,16 +282,19 @@
               <span class="text-xs font-bold uppercase tracking-wider text-emerald-500 block">Dietary Profile</span>
               
               <div>
-                <label for="select-diet" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                <label id="label-diet" for="select-diet" class="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                   General Dietary Footprint Tier
                 </label>
-                <select id="select-diet" name="dietType" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all">
+                <select id="select-diet" name="dietType" class="w-full bg-slate-900 border border-[var(--border-light)] focus:border-[var(--border-focus)] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none transition-all" aria-describedby="help-diet">
                   <option value="vegan">Vegan (Strictly plant-based)</option>
                   <option value="vegetarian">Vegetarian (No meat, dairy/eggs included)</option>
                   <option value="lowMeat">Low Meat (Rare beef, mainly chicken/fish)</option>
                   <option value="mediumMeat">Medium Meat (Normal mixed diet)</option>
                   <option value="heavyMeat">Heavy Meat (High beef/pork intake)</option>
                 </select>
+                <p id="help-diet" class="text-[10px] text-[var(--text-muted)] mt-1.5">
+                  Choose the dietary profile that matches your eating habits.
+                </p>
               </div>
             </div>
 
@@ -306,8 +322,8 @@
             <span class="text-[10px] text-[var(--text-muted)] border border-slate-700 px-2 py-0.5 rounded-full font-normal">Offline Model</span>
           </h2>
           
-          <!-- Chat Messages Container -->
-          <div id="chat-message-list" class="flex-grow overflow-y-auto space-y-4 pr-1 mb-4 flex flex-col text-xs" role="log" aria-label="Chat messages transcript">
+          <!-- Chat Messages Container (Live atomic announcements for streamed text bubbles) -->
+          <div id="chat-message-list" class="flex-grow overflow-y-auto space-y-4 pr-1 mb-4 flex flex-col text-xs" role="log" aria-label="Chat messages transcript" aria-live="polite" aria-atomic="true">
             <!-- Dynamically populated -->
           </div>
 
@@ -356,7 +372,7 @@
 
       <!-- Test Outputs Matrix -->
       <div class="bg-slate-950 p-4 rounded-xl border border-[var(--border-light)] font-mono text-xs">
-        <div id="test-suite-status" class="mb-4 flex items-center space-x-3">
+        <div id="test-suite-status" class="mb-4 flex items-center space-x-3" aria-live="polite" aria-atomic="true">
           <span class="inline-block px-2.5 py-1 rounded text-[10px] font-extrabold uppercase bg-slate-800 text-slate-400">Loading diagnostics...</span>
         </div>
         
@@ -376,7 +392,7 @@
     </div>
   </footer>
 
-  <!-- App Bootstrapper ES6 Module -->
+  <!-- App Bootstrapper ES6 Modules -->
   <script type="module" src="app.js"></script>
   <script type="module" src="tests.js"></script>
 
